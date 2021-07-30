@@ -8,7 +8,7 @@ $filename = 'TrueCategory.csv';
 
 class Parser
 {
-    private array $mass = [];
+    private $mass = [];
     private $count_category = 0;
 
 
