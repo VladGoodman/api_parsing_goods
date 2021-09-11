@@ -5,31 +5,27 @@ namespace App;
 class Connect
 {
     public $url;
-    private $date;
     private $path;
     private $method;
     public $result_url;
+    public $token;
+    public $start;
+    public $end;
 
-
-    public function __construct(string $url, string $date, string $path, string $method)
+    public function __construct($url, $method, $start, $end)
     {
         $this->url = $url;
-        $this->date = $date;
-        $this->path = $path;
         $this->method = $method;
-        if (!$this->date && !$this->path){
-            $this->result_url = "https://mpstats.io/api/wb/".$this->url;
-
-        }
-        $this->result_url = "https://mpstats.io/api/wb/".$this->url."?d1=".trim($this->date)."&path=".$this->path;
+        $this->start = $start;
+        $this->end = $end;
+        $this->token = file_get_contents('token.txt');
+        $this->result_url = "https://mpstats.io/api/wb/" . $this->url;
 
     }
 
     public function getInfoForApi()
     {
-
         $curl = curl_init();
-
         curl_setopt_array($curl, array(
             CURLOPT_URL => $this->result_url,
             CURLOPT_RETURNTRANSFER => true,
@@ -39,18 +35,15 @@ class Connect
             CURLOPT_FOLLOWLOCATION => true,
             CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
             CURLOPT_CUSTOMREQUEST => $this->method,
-            CURLOPT_POSTFIELDS => "{
-        \"startRow\":0,\"filterModel\":{},\"sortModel\":[{\"colId\":\"revenue\",\"sort\":\"desc\"}]}",
+            CURLOPT_POSTFIELDS => "{\"startRow\":$this->start,\"endRow\":$this->end,\"filterModel\":{},\"sortModel\":[{\"colId\":\"id\",\"sort\":\"asc\"}]}",
             CURLOPT_HTTPHEADER => array(
-                "X-Mpstats-TOKEN: 60f991cb23a8a4.55242720a2cbcb3f06383121730e03c23e2c8a79",
+                "X-Mpstats-TOKEN: " . $this->token,
                 "Content-Type: application/json"
             ),
         ));
 
         $response = curl_exec($curl);
-
         curl_close($curl);
         return $response;
     }
-
 }
