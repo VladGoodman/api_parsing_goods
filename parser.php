@@ -7,7 +7,7 @@ use App\Connect;
 
 class Parser
 {
-    private $restartQueue = false;
+    private $restartQueue;
     private $title = [
         'SKU',
         'Name',
@@ -51,13 +51,23 @@ class Parser
 
     public function start()
     {
-        if (!file_get_contents('system_info/queue.log')) {
-            $this->checkCountItems();
-            $this->buildQueueWithoutDailyStatistics();
-        } else {
-            $this->buildQueueWithoutDailyStatistics();
-        }
+        $this->checkCountItems();
+        $this->buildQueueWithoutDailyStatistics();
+        $this->checkQueue();
         $this->parsingGoods();
+    }
+
+    public function checkQueue()
+    {
+        if (
+            gettype((int)$this->start) !== "integer"
+            or
+            gettype((int)$this->end) !== "integer"
+        ) {
+            exit("\nОшибка очередей, отчистите файле queue.log\n");
+        } elseif ($this->start > $this->end) {
+            exit("\nОчереди были неправильно определены, отчистите файл queue.log\n");
+        }
     }
 
     public function buildQueueWithoutDailyStatistics()
@@ -93,6 +103,7 @@ class Parser
             $info_queue = file_get_contents('system_info/queue.log');
             $last_queue = explode("\n", $info_queue);
             $count_queue = explode('/', $last_queue[count($last_queue) - 2]);
+            $this->count_items = $count_queue[1];
             $this->start = $count_queue[0];
             $this->end = $count_queue[1];
             print_r("Обработано товаров : $this->start/$this->end\n");
@@ -109,10 +120,11 @@ class Parser
     public function checkCountItems()
     {
         print_r("\nОпределение колличества товаров...");
-        if (!$request = $this->checkForCountAPI()) {
-            die([0, 'Апи не отвечает']);
-        }
+        $request = $this->checkForCountAPI();
         $result = json_decode($request->getInfoForApi());
+        if (!array_key_exists('total', $result)) {
+            exit("\nАпи не отвечает, попробуйте перезапустить скрипт\n");
+        }
         $this->count_items = $result->total;
         print_r("\nКолличество товаров : $this->count_items\n");
     }
@@ -150,6 +162,7 @@ class Parser
     {
         $filename_logs = $this->getFileLogName();
         print_r("Запуск получения информации о товарах...\n");
+
         for ($item = $this->start; $item <= $this->end + $this->step; $item += $this->step) {
             if ($item === 0 or $item % 1000000 === 0) {
                 $filename_logs = "result/" . $item . "-" . ($item + 1000000) . '.csv';
@@ -157,12 +170,16 @@ class Parser
                     $this->addTitleForReadyLog($filename_logs);
                 }
             }
+            $this->checkQueue();
             print_r("\nЗапись в файл $filename_logs ...");
             if (!$request = $this->checkAPI($item)) {
-                print_r("\nAPI не ответил на запрос\n");
+                print_r("\nAPI не ответил на запрос, попробуйте перезапустить скрипт\n");
                 break;
             }
             $result = json_decode($request->getInfoForApi());
+            if (!array_key_exists('total', $result)) {
+                exit("\n187: Апи не отвечает, попробуйте запустить скрипт ещё раз\n");
+            }
             if ($result) {
                 foreach ($result->data as $item_info) {
                     file_put_contents($filename_logs,
@@ -200,10 +217,10 @@ class Parser
                         , FILE_APPEND);
                 }
             }
-            $this->addInfoForQueue($item, $this->count_items);
+            $this->addInfoForQueue($item + $this->step, $this->count_items);
             $result = null;
         }
-        print_r("\n--------------------\nОБРАБОТКА ЗАВЕРШЕНА\n-----------------\n");
+        print_r("\n--------------------\nОБРАБОТКА ЗАВЕРШЕНА\n--------------------\n");
     }
 }
 

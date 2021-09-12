@@ -20,7 +20,6 @@ class Connect
         $this->end = $end;
         $this->token = file_get_contents('token.txt');
         $this->result_url = "https://mpstats.io/api/wb/" . $this->url;
-
     }
 
     public function getInfoForApi()
@@ -30,7 +29,7 @@ class Connect
             CURLOPT_URL => $this->result_url,
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_ENCODING => "",
-            CURLOPT_MAXREDIRS => 10,
+            CURLOPT_MAXREDIRS => 5,
             CURLOPT_TIMEOUT => 0,
             CURLOPT_FOLLOWLOCATION => true,
             CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
@@ -43,6 +42,8 @@ class Connect
         ));
 
         $response = curl_exec($curl);
+        $getInfo = curl_getinfo($curl);
+
         curl_close($curl);
         return $response;
     }
