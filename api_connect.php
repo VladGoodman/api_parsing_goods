@@ -44,7 +44,6 @@ class Connect
 
         $response = curl_exec($curl);
         $getInfo = curl_getinfo($curl);
-        curl_close($curl);
 
         if($getInfo['http_code'] !== 200 ){
             if($getInfo['http_code'] === 202){
@@ -65,5 +64,6 @@ class Connect
         }else{
             return $response;
         }
+        curl_close($curl);
     }
 }

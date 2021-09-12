@@ -122,9 +122,6 @@ class Parser
         print_r("\nОпределение колличества товаров...");
         $request = $this->checkForCountAPI();
         $result = json_decode($request->getInfoForApi());
-        if (!array_key_exists('total', $result)) {
-            exit("\nАпи не отвечает, попробуйте перезапустить скрипт\n");
-        }
         $this->count_items = $result->total;
         print_r("\nКолличество товаров : $this->count_items\n");
     }
@@ -172,14 +169,8 @@ class Parser
             }
             $this->checkQueue();
             print_r("\nЗапись в файл $filename_logs ...");
-            if (!$request = $this->checkAPI($item)) {
-                print_r("\nAPI не ответил на запрос, попробуйте перезапустить скрипт\n");
-                break;
-            }
+            $request = $this->checkAPI($item);
             $result = json_decode($request->getInfoForApi());
-            if (!array_key_exists('total', $result)) {
-                exit("\n187: Апи не отвечает, попробуйте запустить скрипт ещё раз\n");
-            }
             if ($result) {
                 foreach ($result->data as $item_info) {
                     file_put_contents($filename_logs,
